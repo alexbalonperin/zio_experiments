@@ -14,26 +14,28 @@ object UserProgram {
 
   //The existence check wouldn't work in a concurrent system. We need semantic locking.
   //TODO: explore ZIO.STM and ZIO.Ref
-  def createUser[Env: Tagged](name: String): ZIO[Env with UserService[Env], ProgramError, User.Id] =
+  def createUser[Env: Tagged](name: String) = ZIO.accessM[Env with UserService[Env]]( svc =>
     for {
-      result <- getUsersByName(name).mapError(ProgramError.UserError)
+      result <- svc.get.getByName(name).mapError(ProgramError.UserError)
       user <-
-        if (result.isEmpty) users.createUser(name).mapError(ProgramError.UserError)
+        if (result.isEmpty) svc.get.create(name).mapError(ProgramError.UserError)
         else ZIO.fail(ProgramError.UserAlreadyExists)
     } yield user.id
+  )
 
-  def getUser[Env: Tagged](id: User.Id): ZIO[Env with UserService[Env], ProgramError, Option[User]] =
-    users.getUser(id).mapError(ProgramError.UserError)
+  def getUser[Env: Tagged](id: User.Id) = ZIO.accessM[Env with UserService[Env]](
+    _.get.get(id).mapError(ProgramError.UserError)
+  )
 
-  def getAllUsers[Env: Tagged](): ZIO[Env with UserService[Env], ProgramError, List[User]] =
-    allUsers.mapError(ProgramError.UserError)
+  def getAllUsers[Env: Tagged]() = ZIO.accessM[Env with UserService[Env]](
+    _.get.all.mapError(ProgramError.UserError)
+  )
 
-  def getUsersCreatedBefore[Env: Tagged](
-      instant: Instant
-  ): ZIO[Env with UserService[Env], ProgramError, List[User]] =
-    allUsers
+  def getUsersCreatedBefore[Env: Tagged](instant: Instant) = ZIO.accessM[Env with UserService[Env]](
+    _.get.all
       .mapError(ProgramError.UserError)
       .map(_.filter(_.createdAt.atZoneSameInstant(ZoneOffset.UTC).toInstant.isBefore(instant)))
+  )
 
   trait ProgramError extends Throwable
   object ProgramError {
