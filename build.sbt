@@ -32,6 +32,7 @@ lazy val users = (project in file("users"))
   .settings(
     name := "users",
     resolvers += Resolver.sonatypeRepo("releases"),
+    resolvers += Resolver.sonatypeRepo("snapshots"),
     buildInfoSettings,
     dockerSettings,
     libraryDependencies ++= circe,
