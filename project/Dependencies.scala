@@ -41,7 +41,7 @@ object Dependencies {
 
   lazy val zio = Seq(
     "dev.zio" %% "zio" % Versions.zio,
-    "dev.zio" %% "zio-interop-cats" % "2.0.0.0-RC13",
+    "dev.zio" %% "zio-interop-cats" % "2.0.0.0-RC14",
     "dev.zio" %% "zio-logging" % "0.2.8",
     "dev.zio" %% "zio-logging-slf4j" % "0.2.8",
     "dev.zio" %% "zio-test" % Versions.zio % Test,
