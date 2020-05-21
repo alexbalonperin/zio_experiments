@@ -32,15 +32,18 @@ object Server {
     val timer = new Timers[AppTaskEnv[Env]]
     import timer._
 
+    val TokenRegex = "Bearer (.*)".r
     val authUser: Kleisli[AppTask, Request[AppTask], Either[Challenge, AuthedRequest[AppTask, Challenge]]] =
       Kleisli(request => {
-        ZIO.succeed(request.headers.get(headers.Authorization) match {
-          case None =>
-            Left(Challenge("", ""))
-          case Some(authHeader) =>
-            //TODO: Implement a proper token retrieval mechanism with jwt
-            Right(AuthedRequest(Challenge("", "", Map("token" -> authHeader.value)), request))
-        })
+        ZIO.succeed(
+          request.headers.get(headers.Authorization).map(_.value) match {
+            case None =>
+              Left(Challenge("", ""))
+            case Some(TokenRegex(token)) =>
+              //TODO: Implement a proper token retrieval mechanism with jwt
+              Right(AuthedRequest(Challenge("", "", Map("token" -> token)), request))
+          }
+        )
       })
 
     val middleware = { routes: HttpRoutes[AppTask] =>
