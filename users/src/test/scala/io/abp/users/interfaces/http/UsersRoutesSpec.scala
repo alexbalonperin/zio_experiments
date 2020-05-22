@@ -1,5 +1,6 @@
 package io.abp.users.interfaces.http
 
+import cats.data.Kleisli
 import cats.instances.list._
 import cats.syntax.traverse._
 import dev.profunktor.tracer.Tracer
@@ -19,6 +20,8 @@ import org.http4s.circe._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.dsl.io._
 import org.http4s.implicits._
+import org.http4s.server.middleware.authentication.challenged
+import org.http4s.server.Router
 import zio._
 import zio.clock._
 import zio.interop.catz._
@@ -28,13 +31,20 @@ import zio.test.Assertion._
 import zio.test.environment._
 
 object UsersRoutesSpec extends DefaultRunnableSpec {
-  type Env = Clock with IdGenerator
-  type AppTask[A] = RIO[Env with users.UserService[Env] with OpenTracing, A]
+  type Env = Clock with IdGenerator // with Logging with OpenTracing
+  type AppTaskEnv = Env with users.UserService[Env] with OpenTracing
+  type AppTask[A] = RIO[AppTaskEnv, A]
 
   def makeUserService(input: Ref[Map[User.Id, User]]) = UserService.inMemory(input)
 
   implicit val tracer = Tracer.create[AppTask]()
-  val userRoutes: HttpRoutes[AppTask] = UsersRoutes[Env].prefixedRoutes
+
+  val authUser: Kleisli[AppTask, Request[AppTask], Either[Challenge, AuthedRequest[AppTask, Challenge]]] =
+    Kleisli(request => ZIO.succeed(Right(AuthedRequest(Challenge("", "", Map("token" -> "OK")), request))))
+  val userRoutes: HttpRoutes[AppTask] = Router(
+    UsersRoutes.PathPrefix ->
+      challenged(authUser)(UsersRoutes[Env].routes)
+  )
   implicit val userIdDecoder: Decoder[User.Id] = deriveDecoder[User.Id]
   implicit val userDecoder: Decoder[User] = deriveDecoder[User]
   implicit val allUsersResponseDecoder: Decoder[AllUsersResponse] = deriveDecoder[AllUsersResponse]
