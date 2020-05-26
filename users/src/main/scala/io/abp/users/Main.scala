@@ -16,7 +16,7 @@ import zio.telemetry.opentracing.OpenTracing
 object Main extends App {
   type Env = Clock with IdGenerator with Logging with OpenTracing
 
-  def run(args: List[String]): ZIO[ZEnv, Nothing, Int] = {
+  def run(args: List[String]): ZIO[ZEnv, Nothing, ExitCode] = {
     (for {
       config <- loadConfig
       envs = new Environments(config)
@@ -24,7 +24,7 @@ object Main extends App {
         .provideCustomLayer(envs.userProgramEnv)
     } yield ())
       .provideCustomLayer(Logger.slf4jLogger)
-      .fold(_ => 1, _ => 0)
+      .fold(_ => ExitCode.failure, _ => ExitCode.success)
   }
 
   private def loadConfig: RIO[ZEnv with Logging, AppConfig] =
