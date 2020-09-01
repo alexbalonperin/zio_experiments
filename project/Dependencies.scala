@@ -3,17 +3,17 @@ import sbt._
 object Dependencies {
   object Versions {
     val circe = "0.13.0"
-    val ciris = "1.0.4"
-    val http4s = "0.21.4"
+    val ciris = "1.1.2"
+    val http4s = "0.21.7"
     val http4sTracer = "1.5.3"
-    val jaeger = "1.2.0"
+    val jaeger = "1.3.2"
     val logback = "1.2.3"
     val opentracing = "0.33.0"
-    val zio = "1.0.0-RC20"
-    val zioOpenTracing = "0.4.0"
-    val zioInteropCats = "2.0.0.0-RC14"
-    val zioLogging = "0.2.9"
-    val zipkin = "2.15.0"
+    val zio = "1.0.1"
+    val zioOpenTracing = "0.7.0"
+    val zioInteropCats = "2.1.4.0"
+    val zioLogging = "0.4.0"
+    val zipkin = "2.15.1"
 
     val scalaTest = "3.1.1"
 
