@@ -1,6 +1,5 @@
 package io.abp.users.interfaces.http
 
-import cats.arrow.FunctionK
 import dev.profunktor.tracer.auth.{Http4sAuthTracerDsl, AuthTracedHttpRoute}
 import dev.profunktor.tracer.Tracer
 import io.abp.users.domain.User
@@ -18,11 +17,7 @@ import zio.interop.catz._
 import zio.telemetry.opentracing.OpenTracing
 
 class UsersRoutes[Env: Tag](implicit tracer: Tracer[AppTask[Env, ?]]) {
-  //TODO: PR in profunktor/tracer repo for scala 2.13
-  val ZIOHttp4sTracerDsl = new Http4sAuthTracerDsl[AppTask[Env, ?]] {
-    override val liftG: FunctionK[AppTask[Env, ?], AppTask[Env, ?]] = FunctionK.id[AppTask[Env, ?]]
-  }
-  val dsl = ZIOHttp4sTracerDsl
+  val dsl = Http4sAuthTracerDsl[AppTask[Env, ?]]
   import dsl._
 
   val routes = AuthTracedHttpRoute[Challenge, AppTask[Env, ?]] {
