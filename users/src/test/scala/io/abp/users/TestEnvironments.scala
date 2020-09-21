@@ -56,7 +56,7 @@ object TestEnvironments {
   private def logFormatWithContext(context: LogContext, message: => String) = {
     logFormat.format(message, context)
   }
-  val testLogging = (Clock.live ++ Console.live) >>> Logging.console(logFormatWithContext)
+  val testLogging = (Clock.live ++ Console.live) >>> Logging.console(format = logFormatWithContext(_, _))
   val testConsole = Console.live
   val testRandom = Random.live
 }
