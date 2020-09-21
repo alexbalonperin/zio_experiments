@@ -7,11 +7,21 @@ pull_request_rules:
     actions:
       merge:
         method: merge
-  - name: automatic merge on CI success if only dependencies is changed
+
+  - name: automatic merge on CI success if only dependencies are changed
     conditions:
       - author=scala-steward
       - status-success=continuous-integration/travis-ci/pr
       - files=project/Dependencies.scala
+      - "#files=1"
+    actions:
+      merge:
+        method: merge
+
+  - name: automatic merge on CI success if only scalafmt config is changed
+    conditions:
+      - author=scala-steward
+      - status-success=continuous-integration/travis-ci/pr
       - files=.scalafmt.conf
       - "#files=1"
     actions:
@@ -23,6 +33,7 @@ pull_request_rules:
       - merged
     actions:
       delete_head_branch: {}
+
   - name: ask to resolve conflict
     conditions:
       - conflict
