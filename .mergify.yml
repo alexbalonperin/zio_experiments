@@ -10,7 +10,7 @@ pull_request_rules:
   - name: automatic merge on CI success if only dependencies is changed
     conditions:
       - author=scala-steward
-      - "status-success=ci/circleci: validate"
+      - status-success=continuous-integration/travis-ci/pr
       - files=project/Dependencies.scala
       - "#files=1"
     actions:
