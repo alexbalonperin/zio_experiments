@@ -11,7 +11,8 @@ pull_request_rules:
     conditions:
       - author=scala-steward
       - status-success=continuous-integration/travis-ci/pr
-      - files=project/Dependencies.scala,.scalafmt.conf
+      - files=project/Dependencies.scala
+      - files=.scalafmt.conf
       - "#files=1"
     actions:
       merge:
