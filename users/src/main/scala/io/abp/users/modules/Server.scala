@@ -1,45 +1,83 @@
 package io.abp.users.modules
 
 import cats.arrow.FunctionK
+import cats.data.Kleisli
 import cats.syntax.semigroupk._
+import dev.profunktor.tracer.instances.tracerlog
+import dev.profunktor.tracer.Tracer
 import io.abp.users.config.ApiConfig
 import io.abp.users.interfaces.http.{SystemRoutes, UsersRoutes}
 import io.abp.users.modules.Timers
 import io.abp.users.services.users.UserService
+import org.http4s._
 import org.http4s.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
+import org.http4s.server.middleware.authentication.challenged
 import org.http4s.server.middleware.{AutoSlash, CORS, Logger => RequestResponseLogger}
-import org.http4s.{HttpApp, HttpRoutes}
+import org.http4s.server.Router
 import zio._
 import zio.interop.catz._
+import zio.telemetry.opentracing.OpenTracing
 
 object Server {
-  def serve[Env: Tagged](
-      apiConfig: ApiConfig
-  ): ZIO[ZEnv with Env with UserService[Env], Throwable, Unit] = {
-    type AppTask[A] = ZIO[Env with UserService[Env], Throwable, A]
+  type AppTaskEnv[Env] = Env with UserService[Env] with OpenTracing
 
-    val timer = new Timers[Env with UserService[Env]]
+  def serve[Env: Tag](
+      apiConfig: ApiConfig
+  ): RIO[ZEnv with AppTaskEnv[Env], Unit] = {
+    type AppTask[A] = RIO[AppTaskEnv[Env], A]
+
+    implicit val tracerLog = tracerlog.defaultLog[AppTask]
+    implicit val tracer = Tracer.create[AppTask]()
+    val timer = new Timers[AppTaskEnv[Env]]
     import timer._
 
-    val middleware: HttpRoutes[AppTask] => HttpApp[AppTask] = { routes: HttpRoutes[AppTask] =>
+    val authUser: Kleisli[AppTask, Request[AppTask], Either[Challenge, AuthedRequest[AppTask, Challenge]]] =
+      Kleisli(request => {
+        ZIO.succeed(
+          request.headers.get(headers.Authorization.name).map(_.value) match {
+            case None =>
+              Left(Challenge("", ""))
+            case Some(token) =>
+              //TODO: Implement a proper token retrieval mechanism with jwt
+              Right(AuthedRequest(Challenge("", "", Map("token" -> token)), request))
+          }
+        )
+      })
+
+    val middleware = { routes: HttpRoutes[AppTask] =>
       AutoSlash(routes)
     } andThen { routes: HttpRoutes[AppTask] =>
       CORS(routes, CORS.DefaultCORSConfig)
+    //TODO: Figure out how to add back the Timeout logging
     } andThen { routes: HttpRoutes[AppTask] =>
       RequestResponseLogger(apiConfig.logHeaders, apiConfig.logBody, FunctionK.id[AppTask])(routes.orNotFound)
+    } andThen { routes: Http[AppTask, AppTask] =>
+      Tracer[AppTask].middleware(routes: HttpApp[AppTask], false, false)
     }
 
+    val prefixedUsersRoutes =
+      Router(UsersRoutes.PathPrefix -> challenged(authUser)(UsersRoutes[Env].routes))
+
     for {
-      routes <- ZIO.succeed(
-        SystemRoutes[AppTask]().routes <+> UsersRoutes[Env].routes
+      v1Routes <- ZIO.succeed(
+        SystemRoutes[AppTask]().routes <+> prefixedUsersRoutes
       )
-      implicit0(rts: Runtime[ZEnv with Env with UserService[Env]]) <-
-        ZIO.runtime[ZEnv with Env with UserService[Env]]
+      //v2Routes <- ZIO.succeed(
+      //  v2.SystemRoutes[AppTask]().routes <+> v2.UsersRoutes[Env].prefixedRoutes
+      //)
+      router <- ZIO.succeed(
+        Router(
+          "/" -> v1Routes, //This would always point to the oldest supported version
+          "/v1" -> v1Routes
+          //"/v2" -> v2Routes
+        )
+      )
+      implicit0(rts: Runtime[ZEnv with AppTaskEnv[Env]]) <- ZIO.runtime[ZEnv with AppTaskEnv[Env]]
       _ <-
         BlazeServerBuilder[AppTask](rts.platform.executor.asEC)
           .bindHttp(apiConfig.port, apiConfig.host)
-          .withHttpApp(middleware(routes))
+          .withHttpApp(middleware(router))
           .serve
           .compile
           .drain

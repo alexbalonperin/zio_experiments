@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion := "2.13.1"
+ThisBuild / scalaVersion := "2.13.2"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / organization := "io.abp"
 ThisBuild / organizationName := "abp"
@@ -11,6 +11,15 @@ lazy val buildInfoSettings = Seq(
   buildInfoPackage := "io.abp.users"
 )
 
+lazy val dockerSettings = Seq(
+  name := "users",
+  dockerBaseImage := "openjdk:11-jre",
+  dockerExposedPorts ++= Seq(8080),
+  packageName in Docker := name.value,
+  version in Docker := version.value,
+  dockerAliases ++= Seq(dockerAlias.value.withTag(Option("latest")))
+)
+
 lazy val root = (project in file("."))
   .settings(
     name := "zio_experiments",
@@ -19,14 +28,18 @@ lazy val root = (project in file("."))
   .aggregate(users)
 
 lazy val users = (project in file("users"))
-  .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin, DockerPlugin, AshScriptPlugin)
   .settings(
     name := "users",
     resolvers += Resolver.sonatypeRepo("releases"),
+    resolvers += Resolver.sonatypeRepo("snapshots"),
     buildInfoSettings,
+    dockerSettings,
     libraryDependencies ++= circe,
+    libraryDependencies ++= ciris,
     libraryDependencies ++= http4s,
     libraryDependencies ++= jaegerTracer,
+    libraryDependencies += logback,
     libraryDependencies ++= openTracing,
     libraryDependencies ++= zio,
     libraryDependencies ++= zipkin,
