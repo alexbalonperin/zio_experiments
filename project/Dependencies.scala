@@ -13,7 +13,7 @@ object Dependencies {
     val zioOpenTracing = "0.7.0"
     val zioInteropCats = "2.2.0.1"
     val zioLogging = "0.5.3"
-    val zipkin = "2.15.4"
+    val zipkin = "2.16.0"
 
     val scalaTest = "3.1.1"
 
