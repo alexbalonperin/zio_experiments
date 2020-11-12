@@ -6,7 +6,7 @@ object Dependencies {
     val ciris = "1.2.1"
     val http4s = "0.21.9"
     val http4sTracer = "1.5.3"
-    val jaeger = "1.4.0"
+    val jaeger = "1.5.0"
     val logback = "1.2.3"
     val opentracing = "0.33.0"
     val zio = "1.0.3"
