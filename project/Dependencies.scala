@@ -18,7 +18,7 @@ object Dependencies {
     val scalaTest = "3.1.1"
 
     val betterMonadicFor = "0.3.1"
-    val kindProjector = "0.11.1"
+    val kindProjector = "0.11.2"
   }
   lazy val ciris = Seq(
     "is.cir" %% "ciris" % Versions.ciris,
