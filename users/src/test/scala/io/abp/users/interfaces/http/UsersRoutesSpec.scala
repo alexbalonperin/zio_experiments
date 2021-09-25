@@ -76,24 +76,22 @@ object UsersRoutesSpec extends DefaultRunnableSpec {
         testM("should return all existing users") {
           val postRequest = Request[AppTask](uri = uri"/users", method = POST)
           val getRequest = Request[AppTask](uri = uri"/users", method = GET)
-          checkM(Gen.listOfN(10)(userGen)) {
-            users =>
-              val envs = TestEnvironments(testIdGenerator = IdGenerator.live)
-              val expected = users
+          checkM(Gen.listOfN(10)(userGen)) { users =>
+            val envs = TestEnvironments(testIdGenerator = IdGenerator.live)
+            val expected = users
 
-              Ref.make(Map.empty[User.Id, User]).flatMap {
-                ref =>
-                  (for {
-                    userRoutes <- ZIO.succeed(userRoutes)
-                    _ <-
-                      users
-                        .map(user => Map(("name" -> user.name)))
-                        .traverse(body => userRoutes.orNotFound(postRequest.withEntity(body.asJson)))
-                    response <- userRoutes.orNotFound(getRequest)
-                    result <- response.as[AllUsersResponse]
-                  } yield assert(result.users.map(_.name))(hasSameElements(expected.map(_.name))))
-                    .provideLayer(envs.env ++ ZLayer.succeed(makeUserService(ref)))
-              }
+            Ref.make(Map.empty[User.Id, User]).flatMap { ref =>
+              (for {
+                userRoutes <- ZIO.succeed(userRoutes)
+                _ <-
+                  users
+                    .map(user => Map(("name" -> user.name)))
+                    .traverse(body => userRoutes.orNotFound(postRequest.withEntity(body.asJson)))
+                response <- userRoutes.orNotFound(getRequest)
+                result <- response.as[AllUsersResponse]
+              } yield assert(result.users.map(_.name))(hasSameElements(expected.map(_.name))))
+                .provideLayer(envs.env ++ ZLayer.succeed(makeUserService(ref)))
+            }
           }.provideLayer(testEnvironment ++ IdGenerator.live)
         }
       ),
@@ -101,19 +99,18 @@ object UsersRoutesSpec extends DefaultRunnableSpec {
         testM("should return user with specified id") {
           val getRequest =
             (id: User.Id) => Request[AppTask](uri = Uri(path = s"/users/${id.value}"), method = GET)
-          checkM(Gen.listOfN(10)(userGen)) {
-            users =>
-              val expected = user
-              val envs = TestEnvironments(testIdGenerator = IdGenerator.live)
+          checkM(Gen.listOfN(10)(userGen)) { users =>
+            val expected = user
+            val envs = TestEnvironments(testIdGenerator = IdGenerator.live)
 
-              Ref.make((user +: users).toM).flatMap { ref =>
-                (for {
-                  userRoutes <- ZIO.succeed(userRoutes)
-                  response <- userRoutes.orNotFound(getRequest(user.id))
-                  result <- response.as[GetUserResponse]
-                } yield assert(result.user)(equalTo(expected)))
-                  .provideLayer(envs.env ++ ZLayer.succeed(makeUserService(ref)))
-              }
+            Ref.make((user +: users).toM).flatMap { ref =>
+              (for {
+                userRoutes <- ZIO.succeed(userRoutes)
+                response <- userRoutes.orNotFound(getRequest(user.id))
+                result <- response.as[GetUserResponse]
+              } yield assert(result.user)(equalTo(expected)))
+                .provideLayer(envs.env ++ ZLayer.succeed(makeUserService(ref)))
+            }
           }.provideLayer(testEnvironment ++ IdGenerator.live)
         }
       )
