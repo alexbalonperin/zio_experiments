@@ -39,7 +39,7 @@ object Server {
             case None =>
               Left(Challenge("", ""))
             case Some(token) =>
-              //TODO: Implement a proper token retrieval mechanism with jwt
+              // TODO: Implement a proper token retrieval mechanism with jwt
               Right(AuthedRequest(Challenge("", "", Map("token" -> token)), request))
           }
         )
@@ -49,7 +49,7 @@ object Server {
       AutoSlash(routes)
     } andThen { routes: HttpRoutes[AppTask] =>
       CORS(routes, CORS.DefaultCORSConfig)
-    //TODO: Figure out how to add back the Timeout logging
+    // TODO: Figure out how to add back the Timeout logging
     } andThen { routes: HttpRoutes[AppTask] =>
       RequestResponseLogger(apiConfig.logHeaders, apiConfig.logBody, FunctionK.id[AppTask])(routes.orNotFound)
     } andThen { routes: Http[AppTask, AppTask] =>
@@ -63,14 +63,14 @@ object Server {
       v1Routes <- ZIO.succeed(
         SystemRoutes[AppTask]().routes <+> prefixedUsersRoutes
       )
-      //v2Routes <- ZIO.succeed(
+      // v2Routes <- ZIO.succeed(
       //  v2.SystemRoutes[AppTask]().routes <+> v2.UsersRoutes[Env].prefixedRoutes
-      //)
+      // )
       router <- ZIO.succeed(
         Router(
-          "/" -> v1Routes, //This would always point to the oldest supported version
+          "/" -> v1Routes, // This would always point to the oldest supported version
           "/v1" -> v1Routes
-          //"/v2" -> v2Routes
+          // "/v2" -> v2Routes
         )
       )
       implicit0(rts: Runtime[ZEnv with AppTaskEnv[Env]]) <- ZIO.runtime[ZEnv with AppTaskEnv[Env]]

@@ -34,7 +34,7 @@ object InMemory {
       final def create(name: String): ZIO[WithIdAndClock, CreateError, User] =
         for {
           id <- userId
-          //TODO: use UTC instead of system timezone
+          // TODO: use UTC instead of system timezone
           createdAt <- currentDateTime.mapError(error =>
             CreateError.TechnicalError("Couldn't get current datetime", Some(error))
           )

@@ -50,9 +50,8 @@ object Main extends App {
             .serve[Env](config.api)
             .provideCustomLayer(envs.userProgramEnv ++ ZLayer.succeed(Services.userService(ref, config)))
       } yield ())
-        .onError {
-          case e =>
-            log.error("Couldn't start the application", e)
+        .onError { case e =>
+          log.error("Couldn't start the application", e)
         } *> log.info("Server running")
   }
 

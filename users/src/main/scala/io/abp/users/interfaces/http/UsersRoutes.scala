@@ -24,7 +24,7 @@ class UsersRoutes[Env: Tag](implicit tracer: Tracer[AppTask[Env, ?]]) {
     case GET -> Root as challenge using traceId =>
       challenge.params.get("token") match {
         case Some("dolphins") => Forbidden("dolphins are not allowed")
-        case None             => BadRequest() //Unauthorized would be better but doesn't compile...
+        case None             => BadRequest() // Unauthorized would be better but doesn't compile...
         case _ =>
           UserProgram.getAllUsers
             .foldM(errorHandler, users => Ok(AllUsersResponse(users)))
@@ -49,7 +49,7 @@ class UsersRoutes[Env: Tag](implicit tracer: Tracer[AppTask[Env, ?]]) {
       }
   }
 
-  //TODO: improve error handling
+  // TODO: improve error handling
   private def errorHandler: ProgramError => AppTask[Env, Response[AppTask[Env, ?]]] = {
     case ProgramError.UserAlreadyExists => Conflict("User already exists")
     case ProgramError.UserError(_)      => InternalServerError()

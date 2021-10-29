@@ -13,8 +13,8 @@ import zio._
 object UserProgram {
   type ProgramEnv[Env] = Env with UserService[Env]
 
-  //The existence check wouldn't work in a concurrent system. We need semantic locking.
-  //TODO: explore ZIO.STM and ZIO.Ref
+  // The existence check wouldn't work in a concurrent system. We need semantic locking.
+  // TODO: explore ZIO.STM and ZIO.Ref
   def createUser[Env: Tag](name: String): ZIO[ProgramEnv[Env], ProgramError, User.Id] =
     (for {
       result <- getUsersByName(name).mapError(ProgramError.UserError)
